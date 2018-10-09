@@ -10,11 +10,13 @@ private:
     float integral;
     float Kp;
     float Ki;
+    bool changedSign;
 
     void resetPid()
     {
         integral = 0;
         previousTicks = 0;
+        changedSign = true;
     }
 
 public:
@@ -25,6 +27,7 @@ public:
         integral = 0;
         Kp = 0.3;
         Ki = 0.25;
+        changedSign = false;
     }
 
     void SetSpeed(int speed)
@@ -36,9 +39,17 @@ public:
 
     float Control(long currentTicks)
     {
-        int speedError;
         int currentSpeed = currentTicks - previousTicks;
+        previousTicks = currentTicks;
 
+        if(changedSign)
+        {
+            if(currentSpeed == 0)
+                changedSign = false;
+            return 0;
+        }
+
+        int speedError;
         if(speedSetPoint > 0)
             speedError = speedSetPoint - currentSpeed;
         else
@@ -46,7 +57,6 @@ public:
 
         integral += speedError* Ki;
         float controlSignal = Kp * speedError + integral;
-        previousTicks = currentTicks;
         return controlSignal;
     }
 };
@@ -67,18 +77,6 @@ void PIDs()
     }
 }
 
-// temporary
-int speed = 10;
-
-void forward()
-{
-    speed = - speed;
-    LeftPid.SetSpeed(speed);
-    RightPid.SetSpeed(speed);
-}
-long current = 0;
-//
-
 void setup()
 {
     LeftMotor.Begin(White, Left);
@@ -94,11 +92,5 @@ void setup()
 
 void loop()
 {
-    if(millis() - current > 5000)
-    {
-        forward();
-        current = millis();
-    }
-
     PIDs();
 }
