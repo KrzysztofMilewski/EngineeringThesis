@@ -1,81 +1,32 @@
 #include <Arduino.h>
 #include <SharpSensor.h>
 #include <PololuMotor.h>
+#include <PIDController.h>
 
-struct PidVariables
-{
-private:
-    long previousTicks;
-    int speedSetPoint;
-    float integral;
-    float Kp;
-    float Ki;
-    bool changedSign;
-
-    void resetPid()
-    {
-        integral = 0;
-        previousTicks = 0;
-        changedSign = true;
-    }
-
-public:
-    PidVariables()
-    {
-        previousTicks = 0;
-        speedSetPoint = 0;
-        integral = 0;
-        Kp = 0.3;
-        Ki = 0.25;
-        changedSign = false;
-    }
-
-    void SetSpeed(int speed)
-    {
-        if(speed * speedSetPoint <= 0)
-            resetPid();
-        speedSetPoint = speed;
-    }
-
-    float Control(long currentTicks)
-    {
-        int currentSpeed = currentTicks - previousTicks;
-        previousTicks = currentTicks;
-
-        if(changedSign)
-        {
-            if(currentSpeed == 0)
-                changedSign = false;
-            return 0;
-        }
-
-        int speedError;
-        if(speedSetPoint > 0)
-            speedError = speedSetPoint - currentSpeed;
-        else
-            speedError = speedSetPoint + currentSpeed;
-
-        integral += speedError* Ki;
-        float controlSignal = Kp * speedError + integral;
-        return controlSignal;
-    }
-};
-
-Motor LeftMotor, RightMotor, f;
+Motor LeftMotor, RightMotor;
 Sensor LeftSensor, MidSensor, RightSensor;
 
-PidVariables LeftPid, RightPid;
+PIDController LeftPid, RightPid;
 long PreviousSample = 0;
+byte SampleTime = 20;
 
 void PIDs()
 {
-    if(millis() - PreviousSample > 20)
+    if(millis() - PreviousSample > SampleTime)
     {
         LeftMotor.SetRPM(LeftPid.Control(LeftMotor.GetEncoderTicks()));
         RightMotor.SetRPM(RightPid.Control(RightMotor.GetEncoderTicks()));
         PreviousSample = millis();
     }
 }
+
+bool CheckForObstacles()
+{
+    return (LeftSensor.GetDistance() < 15 or MidSensor.GetDistance() < 15 or RightSensor.GetDistance() < 15);
+}
+
+enum State { Forward, Stop, TurnRight };
+State CurrentState = Forward;
 
 void setup()
 {
@@ -89,8 +40,32 @@ void setup()
     Serial.begin(9600);
 }
 
-
+long timeTurning = 0;
 void loop()
 {
     PIDs();
+    if(CurrentState == Forward)
+    {
+        LeftPid.SetSpeed(8);
+        RightPid.SetSpeed(8);
+
+        if(CheckForObstacles())
+            CurrentState = Stop;
+    }
+    else if(CurrentState == Stop)
+    {
+        LeftPid.SetSpeed(0);
+        RightPid.SetSpeed(0);
+
+        if(LeftPid.GetCurrentSpeed() == 0 and RightPid.GetCurrentSpeed() == 0)
+            CurrentState = TurnRight;
+    }
+    else if(CurrentState == TurnRight)
+    {
+        LeftPid.SetSpeed(8);
+        RightPid.SetSpeed(-8);
+
+        if(!CheckForObstacles())
+            CurrentState = Forward;
+    }
 }
