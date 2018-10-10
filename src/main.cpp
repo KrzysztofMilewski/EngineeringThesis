@@ -37,19 +37,23 @@ void setup()
     MidSensor.Begin(MidSensorPin);
     RightSensor.Begin(RightSensorPin);
 
+    //temporary
     Serial.begin(9600);
 }
 
-long timeTurning = 0;
+bool ObstacleDetected = false;
+
 void loop()
 {
     PIDs();
+    ObstacleDetected = CheckForObstacles();
+
     if(CurrentState == Forward)
     {
         LeftPid.SetSpeed(8);
         RightPid.SetSpeed(8);
 
-        if(CheckForObstacles())
+        if(ObstacleDetected)
             CurrentState = Stop;
     }
     else if(CurrentState == Stop)
@@ -58,14 +62,14 @@ void loop()
         RightPid.SetSpeed(0);
 
         if(LeftPid.GetCurrentSpeed() == 0 and RightPid.GetCurrentSpeed() == 0)
-            CurrentState = TurnRight;
+            CurrentState = ObstacleDetected ? TurnRight : Forward;
     }
     else if(CurrentState == TurnRight)
     {
         LeftPid.SetSpeed(8);
         RightPid.SetSpeed(-8);
 
-        if(!CheckForObstacles())
-            CurrentState = Forward;
+        if(!ObstacleDetected)
+            CurrentState = Stop;
     }
 }

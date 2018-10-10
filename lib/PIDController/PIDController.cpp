@@ -25,8 +25,6 @@ float PIDController::Control(long currentTicks)
     currentSpeed = currentTicks - previousTicks;
     previousTicks = currentTicks;
 
-    Serial.println(currentSpeed);
-
     if(changedSign)
     {
         if(currentSpeed == 0)
