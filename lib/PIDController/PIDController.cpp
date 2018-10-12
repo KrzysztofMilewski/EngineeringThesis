@@ -1,8 +1,5 @@
 #include "PIDController.h"
 
-//temporary
-#include "Arduino.h"
-
 PIDController::PIDController()
 {
     previousTicks = 0;

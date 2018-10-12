@@ -10,6 +10,14 @@ PIDController LeftPid, RightPid;
 long PreviousSample = 0;
 byte SampleTime = 20;
 
+enum State { Forward, Stop, TurnRight };
+State CurrentState = Forward;
+bool ObstacleDetected = false;
+
+const byte YellowLED = 11;
+const byte RedLED = 12;
+const byte GreenLED = 13;
+
 void PIDs()
 {
     if(millis() - PreviousSample > SampleTime)
@@ -22,11 +30,44 @@ void PIDs()
 
 bool CheckForObstacles()
 {
-    return (LeftSensor.GetDistance() < 15 or MidSensor.GetDistance() < 15 or RightSensor.GetDistance() < 15);
+    float leftDistance = LeftSensor.GetDistance();
+    float midDistance = MidSensor.GetDistance();
+    float rightDistance = RightSensor.GetDistance();
+
+    //temporary
+    Serial.print(leftDistance);
+    Serial.print(" ;");
+    Serial.print(midDistance);
+    Serial.print(" ;");
+    Serial.println(rightDistance);
+
+    if(ObstacleDetected)
+        return (leftDistance < 15.5 or midDistance < 15.5 or rightDistance < 15.5);
+    else
+        return (leftDistance < 14.5 or midDistance < 14.5 or rightDistance < 14.5);
 }
 
-enum State { Forward, Stop, TurnRight };
-State CurrentState = Forward;
+void SignalizeState()
+{
+    if(CurrentState == Forward)
+    {
+        digitalWrite(GreenLED, HIGH);
+        digitalWrite(YellowLED, LOW);
+        digitalWrite(RedLED, LOW);
+    }
+    else if(CurrentState == Stop)
+    {
+        digitalWrite(GreenLED, LOW);
+        digitalWrite(YellowLED, LOW);
+        digitalWrite(RedLED, HIGH);
+    }
+    else if(CurrentState == TurnRight)
+    {
+        digitalWrite(GreenLED, LOW);
+        digitalWrite(YellowLED, HIGH);
+        digitalWrite(RedLED, LOW);
+    }
+}
 
 void setup()
 {
@@ -41,11 +82,10 @@ void setup()
     Serial.begin(9600);
 }
 
-bool ObstacleDetected = false;
-
 void loop()
 {
     PIDs();
+    SignalizeState();
     ObstacleDetected = CheckForObstacles();
 
     if(CurrentState == Forward)
@@ -66,8 +106,8 @@ void loop()
     }
     else if(CurrentState == TurnRight)
     {
-        LeftPid.SetSpeed(8);
-        RightPid.SetSpeed(-8);
+        LeftPid.SetSpeed(5);
+        RightPid.SetSpeed(-5);
 
         if(!ObstacleDetected)
             CurrentState = Stop;
