@@ -112,4 +112,5 @@ void loop()
         if(!ObstacleDetected)
             CurrentState = Stop;
     }
+    Serial.println("asdf");
 }
