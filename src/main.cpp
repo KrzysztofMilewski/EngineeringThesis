@@ -1,18 +1,20 @@
 #include <Arduino.h>
-#include <SharpSensor.h>
 #include <PololuMotor.h>
+#include <SharpSensor.h>
 #include <PIDController.h>
+#include <RuleSet.h>
 
 Motor LeftMotor, RightMotor;
 Sensor LeftSensor, MidSensor, RightSensor;
-
 PIDController LeftPid, RightPid;
+RuleSet RuleSet;
+
 long PreviousSample = 0;
 byte SampleTime = 20;
 
-enum State { Forward, Stop, TurnRight };
-State CurrentState = Forward;
-bool ObstacleDetected = false;
+float Distances[3];
+int MotorSpeeds[2];
+bool LEDStates[3];
 
 const byte YellowLED = 11;
 const byte RedLED = 12;
@@ -28,45 +30,30 @@ void PIDs()
     }
 }
 
-bool CheckForObstacles()
+void GetDistances()
 {
-    float leftDistance = LeftSensor.GetDistance();
-    float midDistance = MidSensor.GetDistance();
-    float rightDistance = RightSensor.GetDistance();
-
-    //temporary
-    Serial.print(leftDistance);
-    Serial.print(" ;");
-    Serial.print(midDistance);
-    Serial.print(" ;");
-    Serial.println(rightDistance);
-
-    if(ObstacleDetected)
-        return (leftDistance < 15.5 or midDistance < 15.5 or rightDistance < 15.5);
-    else
-        return (leftDistance < 14.5 or midDistance < 14.5 or rightDistance < 14.5);
+    Distances[0] = LeftSensor.GetDistance();
+    Distances[1] = MidSensor.GetDistance();
+    Distances[2] = RightSensor.GetDistance();
 }
 
-void SignalizeState()
+void SetMotorSpeeds()
 {
-    if(CurrentState == Forward)
-    {
-        digitalWrite(GreenLED, HIGH);
-        digitalWrite(YellowLED, LOW);
-        digitalWrite(RedLED, LOW);
-    }
-    else if(CurrentState == Stop)
-    {
-        digitalWrite(GreenLED, LOW);
-        digitalWrite(YellowLED, LOW);
-        digitalWrite(RedLED, HIGH);
-    }
-    else if(CurrentState == TurnRight)
-    {
-        digitalWrite(GreenLED, LOW);
-        digitalWrite(YellowLED, HIGH);
-        digitalWrite(RedLED, LOW);
-    }
+    LeftPid.SetSpeed(MotorSpeeds[0]);
+    RightPid.SetSpeed(MotorSpeeds[1]);
+}
+void InitializeLEDs()
+{
+    pinMode(YellowLED, OUTPUT);
+    pinMode(GreenLED, OUTPUT);
+    pinMode(RedLED, OUTPUT);
+}
+
+void FlashLEDs()
+{
+    digitalWrite(YellowLED, LEDStates[0]);
+    digitalWrite(RedLED, LEDStates[1]);
+    digitalWrite(GreenLED, LEDStates[2]);
 }
 
 void setup()
@@ -78,6 +65,8 @@ void setup()
     MidSensor.Begin(MidSensorPin);
     RightSensor.Begin(RightSensorPin);
 
+    InitializeLEDs();
+
     //temporary
     Serial.begin(9600);
 }
@@ -85,32 +74,10 @@ void setup()
 void loop()
 {
     PIDs();
-    SignalizeState();
-    ObstacleDetected = CheckForObstacles();
+    GetDistances();
 
-    if(CurrentState == Forward)
-    {
-        LeftPid.SetSpeed(8);
-        RightPid.SetSpeed(8);
+    RuleSet.Run(Distances, MotorSpeeds, LEDStates);
 
-        if(ObstacleDetected)
-            CurrentState = Stop;
-    }
-    else if(CurrentState == Stop)
-    {
-        LeftPid.SetSpeed(0);
-        RightPid.SetSpeed(0);
-
-        if(LeftPid.GetCurrentSpeed() == 0 and RightPid.GetCurrentSpeed() == 0)
-            CurrentState = ObstacleDetected ? TurnRight : Forward;
-    }
-    else if(CurrentState == TurnRight)
-    {
-        LeftPid.SetSpeed(5);
-        RightPid.SetSpeed(-5);
-
-        if(!ObstacleDetected)
-            CurrentState = Stop;
-    }
-    Serial.println("asdf");
+    SetMotorSpeeds();
+    FlashLEDs();
 }
