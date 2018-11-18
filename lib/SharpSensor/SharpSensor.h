@@ -11,13 +11,13 @@ class Sensor
 private:
 
   byte pinAttached;
-  
+
 public:
 
-  void Begin(byte pin); //Konfiguracja - parametr to położenie czujnika
-  int GetVoltage();     //Zwraca napięcia z wyjścia czujnika (charakterystyka eksponencjalna)
-  float GetDistance();  //Do zrobienia ;)
-  
+  void Begin(byte pin); 
+  int GetVoltage();
+  float GetDistance();
+
 };
 
 #endif

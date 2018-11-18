@@ -24,8 +24,8 @@ void PIDs()
 {
     if(millis() - PreviousSample > SampleTime)
     {
-        LeftMotor.SetRPM(LeftPid.Control(LeftMotor.GetEncoderTicks()));
-        RightMotor.SetRPM(RightPid.Control(RightMotor.GetEncoderTicks()));
+        LeftMotor.SetPWM(LeftPid.Control(LeftMotor.GetEncoderTicks()));
+        RightMotor.SetPWM(RightPid.Control(RightMotor.GetEncoderTicks()));
         PreviousSample = millis();
     }
 }
@@ -42,6 +42,7 @@ void SetMotorSpeeds()
     LeftPid.SetSpeed(MotorSpeeds[0]);
     RightPid.SetSpeed(MotorSpeeds[1]);
 }
+
 void InitializeLEDs()
 {
     pinMode(YellowLED, OUTPUT);
@@ -58,8 +59,8 @@ void FlashLEDs()
 
 void setup()
 {
-    LeftMotor.Begin(White, Left);
-    RightMotor.Begin(White, Right);
+    LeftMotor.Begin(Red, Left);
+    RightMotor.Begin(Red, Right);
 
     LeftSensor.Begin(LeftSensorPin);
     MidSensor.Begin(MidSensorPin);
@@ -71,13 +72,65 @@ void setup()
     Serial.begin(9600);
 }
 
+bool ObstacleDetected;
+
+bool CheckForObstacles()
+{
+    if(ObstacleDetected)
+        return (Distances[0] < 8.2 or Distances[1] < 8.2 or Distances[2] < 8.2);
+    else
+        return (Distances[0] < 7.8 or Distances[1] < 7.8 or Distances[2] < 7.8);
+}
+
+enum State {Forward, Search};
+State state = Forward;
+unsigned long lastMeasure = 0;
+float LastAverage = 0;
+int wsp = 1;
+
 void loop()
 {
     PIDs();
     GetDistances();
 
-    RuleSet.Run(Distances, MotorSpeeds, LEDStates);
+    ObstacleDetected = CheckForObstacles();
 
-    SetMotorSpeeds();
-    FlashLEDs();
+    if(state == Forward)
+    {
+        RightPid.SetSpeed(5);
+        LeftPid.SetSpeed(5);
+
+        digitalWrite(GreenLED, 1);
+        digitalWrite(RedLED, 0);
+
+        if(ObstacleDetected)
+        {
+            state = Search;
+            LastAverage = 0;
+            if(Distances[0] < Distances[2])
+                wsp = -1;
+            else
+                wsp = 1;
+        }
+    }
+    else if(state == Search)
+    {
+        digitalWrite(GreenLED, 0);
+        digitalWrite(RedLED, 1);
+
+        RightPid.SetSpeed(5 * wsp);
+        LeftPid.SetSpeed(-5 * wsp);
+
+        if(millis() - lastMeasure > 20)
+        {
+            float averageDistance = (Distances[0] + Distances[1] + Distances[2]) / 3.00;
+            float derivative = averageDistance - LastAverage;
+
+            if(derivative < 1.5 && derivative > 0 && !ObstacleDetected)
+                state = Forward;
+
+            LastAverage = averageDistance;
+            lastMeasure = millis();
+        }
+    }
 }

@@ -7,15 +7,14 @@ void Sensor::Begin(byte pin)
     pinMode(pinAttached, INPUT);
 }
 
-//temporary
 int Sensor::GetVoltage()
 {
     return analogRead(pinAttached);
 }
 
 float Sensor::GetDistance()
-{//Wartości testowe
+{
     int inputVoltage = analogRead(pinAttached);
-    float distance = 42.26 * exp(-0.01477 * inputVoltage) + 17.92 * exp(-0.002935*inputVoltage);
+    float distance = 71.83 * exp(-0.016 * inputVoltage) + 16.99 * exp(-0.00283 * inputVoltage);
     return distance;
 }

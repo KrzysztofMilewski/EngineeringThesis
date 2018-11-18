@@ -20,12 +20,12 @@ private:
   void IncrementTickNumber();
   static void ISRLeft();
   static void ISRRight();
-  
+
 public:
 
-  void Begin(byte colour, byte side); //Konfiguracja silnika - parametry to kolor felg robota oraz strona po której jest dany silnik
-  void SetRPM(int rpm);               //Ustawienie zadanej prędkości
-  long GetEncoderTicks();             //Zwraca wartość zmiennej w której jest zapisana ilość impulsów z enkodera
+  void Begin(byte colour, byte side);
+  void SetPWM(int duty);
+  long GetEncoderTicks();
 };
 
 #endif

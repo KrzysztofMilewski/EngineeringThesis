@@ -7,7 +7,7 @@ Motor * Motor::instanceRight;
 void Motor::Begin(byte colour, byte side)
 {
     SetUpEncoder(side);
-  
+
     if(colour == White and side == Left)
     {
       controlPin1 = 5;
@@ -29,17 +29,17 @@ void Motor::Begin(byte colour, byte side)
     digitalWrite(controlPin2, LOW);
 }
 
-void Motor::SetRPM(int rpm)
+void Motor::SetPWM(int duty)
 {
-  if(rpm>0)
+  if(duty>0)
   {
     digitalWrite(controlPin1, LOW);
-    analogWrite(controlPin2, rpm);  
-  }   
+    analogWrite(controlPin2, duty);
+  }
   else
   {
     digitalWrite(controlPin2, LOW);
-    analogWrite(controlPin1, -rpm);
+    analogWrite(controlPin1, -duty);
   }
 }
 
@@ -58,7 +58,7 @@ void Motor::SetUpEncoder(byte side)
       instanceLeft = this;
     }
     else if(side == Right)
-    {    
+    {
       attachInterrupt(digitalPinToInterrupt(Right),ISRRight,CHANGE);
       instanceRight = this;
     }
@@ -78,4 +78,3 @@ void Motor::ISRRight()
 {
   instanceRight->IncrementTickNumber();
 }
-
