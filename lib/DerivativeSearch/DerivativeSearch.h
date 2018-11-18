@@ -1,7 +1,8 @@
 #ifndef DerivativeSearch_h
 #define DerivativeSearch_h
+#include <ObstacleAvoidanceAlgorithm.h>
 
-class DerivativeSearch
+class DerivativeSearch : public ObstacleAvoidanceAlgorithm
 {
 private:
     enum class State {Forward, SearchPath};
@@ -10,12 +11,12 @@ private:
     long previousMeasureSample;
     float previousAverageDistance;
     int turnFactor;
-    bool obstacleDetected;
 
-    bool checkForObstacles(const float *sensorReadings);
+    void setLEDs(Result &r) override;
+
 public:
     DerivativeSearch();
-    void Run(const float *sensorReadings, int *motorSpeeds, bool *ledStates);
+    Result Run() override;
 };
 
 #endif

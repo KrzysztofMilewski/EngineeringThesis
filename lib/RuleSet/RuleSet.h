@@ -1,20 +1,18 @@
 #ifndef RuleSet_h
 #define RuleSet_h
+#include <ObstacleAvoidanceAlgorithm.h>
 
-class RuleSet
+class RuleSet : public ObstacleAvoidanceAlgorithm
 {
 private:
     enum class State { Forward, Stop, TurnRight};
-
     State currentState;
-    bool obstacleDetected;
 
-    bool checkForObstacles(const float *sensorReadings);
-    void setLEDStates(bool *ledStates);
+    void setLEDs(Result &r) override;
 
 public:
     RuleSet();
-    void Run(const float *sensorReadings, int *motorSpeeds, bool *ledStates);
+    Result Run() override;
 };
 
 #endif

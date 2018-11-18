@@ -3,21 +3,23 @@
 
 DerivativeSearch::DerivativeSearch()
 {
-    obstacleDetected = false;
     currentState = State::Forward;
     previousMeasureSample = 0;
     previousAverageDistance = 0;
     turnFactor = 1;
+    boundary = 10;
 }
 
-void DerivativeSearch::Run(const float *sensorReadings, int *motorSpeeds, bool *ledStates)
+Result DerivativeSearch::Run()
 {
-    obstacleDetected = checkForObstacles(sensorReadings);
+    obstacleDetected = checkForObstacles();
+
+    Result result;
 
     if(currentState == State::Forward)
     {
-        motorSpeeds[0] = 5;
-        motorSpeeds[1] = 5;
+        result.motorSpeeds[0] = 5;
+        result.motorSpeeds[1] = 5;
 
         if(obstacleDetected)
         {
@@ -28,8 +30,8 @@ void DerivativeSearch::Run(const float *sensorReadings, int *motorSpeeds, bool *
     }
     else if(currentState == State::SearchPath)
     {
-        motorSpeeds[0] = 5 * turnFactor;
-        motorSpeeds[1] = -5 * turnFactor;
+        result.motorSpeeds[0] = 5 * turnFactor;
+        result.motorSpeeds[1] = -5 * turnFactor;
 
         if(millis() - previousMeasureSample > 20)
         {
@@ -43,12 +45,31 @@ void DerivativeSearch::Run(const float *sensorReadings, int *motorSpeeds, bool *
             previousMeasureSample = millis();
         }
     }
+    setLEDs(result);
+    return result;
 }
 
-bool DerivativeSearch::checkForObstacles(const float *sensorReadings)
+void DerivativeSearch::setLEDs(Result &r)
 {
-    if(obstacleDetected)
-        return (sensorReadings[0] < 10.2 or sensorReadings[1] < 10.2 or sensorReadings[2] < 10.2);
+    if(currentState == State::Forward)
+    {
+        r.diodesStates[0] = 0;
+        r.diodesStates[1] = 0;
+        r.diodesStates[2] = 1;
+    }
     else
-        return (sensorReadings[0] < 9.8 or sensorReadings[1] < 9.8 or sensorReadings[2] < 9.8);
+    {
+        if(turnFactor > 0)
+        {
+            r.diodesStates[0] = 0;
+            r.diodesStates[1] = 1;
+            r.diodesStates[2] = 0;
+        }
+        else
+        {
+            r.diodesStates[0] = 1;
+            r.diodesStates[1] = 0;
+            r.diodesStates[2] = 0;
+        }
+    }
 }
