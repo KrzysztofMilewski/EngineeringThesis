@@ -3,11 +3,13 @@
 #include <SharpSensor.h>
 #include <PIDController.h>
 #include <RuleSet.h>
+#include <DerivativeSearch.h>
 
 Motor LeftMotor, RightMotor;
 Sensor LeftSensor, MidSensor, RightSensor;
 PIDController LeftPid, RightPid;
 RuleSet RuleSet;
+DerivativeSearch DerivativeSearch;
 
 long PreviousSample = 0;
 byte SampleTime = 20;
@@ -59,8 +61,8 @@ void FlashLEDs()
 
 void setup()
 {
-    LeftMotor.Begin(Red, Left);
-    RightMotor.Begin(Red, Right);
+    LeftMotor.Begin(White, Left);
+    RightMotor.Begin(White, Right);
 
     LeftSensor.Begin(LeftSensorPin);
     MidSensor.Begin(MidSensorPin);
@@ -93,44 +95,49 @@ void loop()
     PIDs();
     GetDistances();
 
-    ObstacleDetected = CheckForObstacles();
+    DerivativeSearch.Run(Distances, MotorSpeeds, LEDStates);
 
-    if(state == Forward)
-    {
-        RightPid.SetSpeed(5);
-        LeftPid.SetSpeed(5);
+    // ObstacleDetected = CheckForObstacles();
+    //
+    // if(state == Forward)
+    // {
+    //     RightPid.SetSpeed(5);
+    //     LeftPid.SetSpeed(5);
+    //
+    //     digitalWrite(GreenLED, 1);
+    //     digitalWrite(RedLED, 0);
+    //
+    //     if(ObstacleDetected)
+    //     {
+    //         state = Search;
+    //         LastAverage = 0;
+    //         if(Distances[0] < Distances[2])
+    //             wsp = -1;
+    //         else
+    //             wsp = 1;
+    //     }
+    // }
+    // else if(state == Search)
+    // {
+    //     digitalWrite(GreenLED, 0);
+    //     digitalWrite(RedLED, 1);
+    //
+    //     RightPid.SetSpeed(5 * wsp);
+    //     LeftPid.SetSpeed(-5 * wsp);
+    //
+    //     if(millis() - lastMeasure > 20)
+    //     {
+    //         float averageDistance = (Distances[0] + Distances[1] + Distances[2]) / 3.00;
+    //         float derivative = averageDistance - LastAverage;
+    //
+    //         if(derivative < 1.5 && derivative > 0 && !ObstacleDetected)
+    //             state = Forward;
+    //
+    //         LastAverage = averageDistance;
+    //         lastMeasure = millis();
+    //     }
+    // }
 
-        digitalWrite(GreenLED, 1);
-        digitalWrite(RedLED, 0);
-
-        if(ObstacleDetected)
-        {
-            state = Search;
-            LastAverage = 0;
-            if(Distances[0] < Distances[2])
-                wsp = -1;
-            else
-                wsp = 1;
-        }
-    }
-    else if(state == Search)
-    {
-        digitalWrite(GreenLED, 0);
-        digitalWrite(RedLED, 1);
-
-        RightPid.SetSpeed(5 * wsp);
-        LeftPid.SetSpeed(-5 * wsp);
-
-        if(millis() - lastMeasure > 20)
-        {
-            float averageDistance = (Distances[0] + Distances[1] + Distances[2]) / 3.00;
-            float derivative = averageDistance - LastAverage;
-
-            if(derivative < 1.5 && derivative > 0 && !ObstacleDetected)
-                state = Forward;
-
-            LastAverage = averageDistance;
-            lastMeasure = millis();
-        }
-    }
+    SetMotorSpeeds();
+    FlashLEDs();
 }
