@@ -15,7 +15,7 @@ void ObstacleAvoidanceAlgorithm::GetDistances(float left, float middle, float ri
 
 void ObstacleAvoidanceAlgorithm::SetBoundary(float newBoundary)
 {
-    if(newBoundary > 5)
+    if(newBoundary > 5 && newBoundary < 30)
         boundary = newBoundary;
 }
 

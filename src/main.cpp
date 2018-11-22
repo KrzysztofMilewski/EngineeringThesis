@@ -16,10 +16,6 @@ DerivativeSearch DerivativeSearch;
 long PreviousSample = 0;
 byte SampleTime = 20;
 
-float Distances[3];
-int MotorSpeeds[2];
-bool LEDStates[3];
-
 const byte YellowLED = 11;
 const byte RedLED = 12;
 const byte GreenLED = 13;
@@ -41,19 +37,11 @@ void PIDs()
     }
 }
 
-void GetDistances()
-{
-    Distances[0] = LeftSensor.GetDistance();
-    Distances[1] = MidSensor.GetDistance();
-    Distances[2] = RightSensor.GetDistance();
-}
-
 void SetMotorSpeeds(int *speeds)
 {
     LeftPid.SetSpeed(speeds[0]);
     RightPid.SetSpeed(speeds[1]);
 }
-
 
 void FlashLEDs(bool *states)
 {
@@ -80,6 +68,7 @@ void setup()
 void loop()
 {
     PIDs();
+    
     Algorithm->GetDistances(LeftSensor.GetDistance(), MidSensor.GetDistance(), RightSensor.GetDistance());
     Result result = Algorithm->Run();
 
